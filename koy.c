@@ -1,4 +1,5 @@
 /*
+/*
  * Copyright 2018 Thomas Bocek
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +15,12 @@
  * limitations under the License.
  * 
  */
+ 
+ /*
+  * Changes by Max Schillinger (2018):
+  * - replaced function "qwerty2dvorak" by "qwertz2koy"
+  * - replaced "dvorak" by "koy" in some comments
+  */
  
  /*
   * Why is this tool useful?
@@ -44,10 +51,10 @@
   * the keys from /dev/input to /dev/uinput. If CTRL/ALT/WIN is
   * pressed it will map the keys back to "Qwerty".
   * 
-  * Intallation
+  * Installation
   * ===========
   * 
-  * make dvorak
+  * make koy
   * //make sure your user belongs to the group "input" -> ls -la /dev/input
   * //this also applies for /dev/uinput -> https://github.com/tuomasjjrasanen/python-uinput/blob/master/udev-rules/40-uinput.rules
   * //start it in startup applications
@@ -101,44 +108,45 @@ static int modifier_bit(int key) {
   return 0;
 }
 
-//from: https://github.com/kentonv/dvorak-qwerty/tree/master/unix
-static int qwerty2dvorak(int key) {
+// same pattern as function "qwerty2dvorak" from
+// https://github.com/kentonv/dvorak-qwerty/tree/master/unix
+static int qwertz2koy(int key) {
   switch (key) {
-    case 12: return 40;
-    case 13: return 27;
-    case 16: return 45;
-    case 17: return 51;
-    case 18: return 32;
-    case 19: return 24;
-    case 20: return 37;
-    case 21: return 20;
-    case 22: return 33;
-    case 23: return 34;
-    case 24: return 31;
-    case 25: return 19;
-    case 26: return 12;
-    case 27: return 13;
-    case 30: return 30;
-    case 31: return 39;
-    case 32: return 35;
-    case 33: return 21;
-    case 34: return 22;
-    case 35: return 36;
-    case 36: return 46;
-    case 37: return 47;
-    case 38: return 25;
-    case 39: return 44;
-    case 40: return 16;
-    case 44: return 53;
-    case 45: return 48;
-    case 46: return 23;
-    case 47: return 52;
-    case 48: return 49;
-    case 49: return 38;
-    case 50: return 50;
-    case 51: return 17;
-    case 52: return 18;
-    case 53: return 26;
+    case 12: return 25; // ß
+    case 13: return 13; // ´
+    case 16: return 45; // Q
+    case 17: return 51; // W
+    case 18: return 32; // E
+    case 19: return 37; // R
+    case 20: return 36; // T
+    case 21: return 26; // Z
+    case 22: return 34; // U
+    case 23: return 33; // I
+    case 24: return 18; // O
+    case 25: return 50; // P
+    case 26: return 47; // Ü
+    case 27: return 27; // + (no "+" key in KOY layout)
+    case 30: return 31; // A
+    case 31: return 39; // S
+    case 32: return 35; // D
+    case 33: return 40; // F
+    case 34: return 22; // G
+    case 35: return 30; // H
+    case 36: return 53; // J
+    case 37: return 16; // K
+    case 38: return 24; // L
+    case 39: return 48; // Ö
+    case 40: return 46; // Ä
+    case 44: return 20; // Y
+    case 45: return 44; // X
+    case 46: return 23; // C
+    case 47: return 21; // V
+    case 48: return 49; // B
+    case 49: return 38; // N
+    case 50: return 52; // M
+    case 51: return 19; // ,
+    case 52: return 17; // .
+    case 53: return 12; // -
   }
   return key;
 }
@@ -165,7 +173,7 @@ int main(int argc, char* argv[]) {
     //mapping the virtual keyboard
 
     memset(&uidev, 0, sizeof(uidev));
-    snprintf(uidev.name, UINPUT_MAX_NAME_SIZE, "Virtual Dvorak Keyboard");
+    snprintf(uidev.name, UINPUT_MAX_NAME_SIZE, "Virtual KOY Keyboard");
     uidev.id.bustype = BUS_USB;
     uidev.id.vendor  = 0x1234;
     uidev.id.product = 0x5678;
@@ -291,22 +299,22 @@ int main(int argc, char* argv[]) {
 				}	
 			}
 
-			if(ev.code != qwerty2dvorak(ev.code) && (mod_state > 0 || array_counter > 0)) {
+			if(ev.code != qwertz2koy(ev.code) && (mod_state > 0 || array_counter > 0)) {
 				code = ev.code;
-				//printf("dvorak %d, %d\n", array_counter, mod_state);
+				//printf("koy %d, %d\n", array_counter, mod_state);
 				if(ev.value==1) { //pressed
 					if(array_counter == MAX_LENGTH) {
 						printf("warning, too many keys pressed: %d. %s 0x%04x (%d), arr:%d\n",
 								MAX_LENGTH, evval[ev.value], (int)ev.code, (int)ev.code, array_counter);
-						//skip dvorak mapping
+						//skip koy mapping
 					} else {
 						array[array_counter] = ev.code + 1; //0 means not mapped
 						array_counter++;
-						code = qwerty2dvorak(ev.code); // dvorak mapping
+						code = qwertz2koy(ev.code); // koy mapping
 					}
 				} else if(ev.value==0) { //released
 					//now we need to check if the code is in the array
-					//if it is, then the pressed key was in dvorak mode and
+					//if it is, then the pressed key was in koy mode and
 					//we need to remove it from the array. The ctrl or alt
 					//key does not need to be pressed, when a key is released.
 					//A previous implementation only had a counter, which resulted
@@ -315,7 +323,7 @@ int main(int argc, char* argv[]) {
 						if(array[i] == ev.code + 1) {
 							//found it, map it!
 							array[i] = 0;
-							code = qwerty2dvorak(ev.code); // dvorak mapping
+							code = qwertz2koy(ev.code); // koy mapping
 						}
 					}
 					//cleanup array counter
@@ -329,7 +337,7 @@ int main(int argc, char* argv[]) {
 				}
 				emit(fdo, ev.type, code, ev.value);
 			} else {
-				//printf("non dvorak %d\n", array_counter);
+				//printf("non koy %d\n", array_counter);
 				emit(fdo, ev.type, ev.code, ev.value);
 			}
 		} else {
