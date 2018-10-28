@@ -3,6 +3,8 @@
 This project let's you use the QWERTZ shortcuts you are used to although you are using the K,O.Y keyboard layout.
 It's a fork of https://github.com/tbocek/dvorak. So Thomas' project description is still valid, I just have changed the filenames in the installation section.
 
+---
+
 Since I type with the "Dvorak" keyboard layout, the shortcuts such as ctrl-c, ctrl-x, or ctrl-v are 
 not comfortable anymore for the left hand. And even one of them require two hands to press.
 
