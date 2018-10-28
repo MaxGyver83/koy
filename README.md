@@ -1,4 +1,4 @@
-# Dvorak <> Qwerty - Keyboard remapping for Linux when pressing CTRL or ALT
+# KOY <> Qwertz - Keyboard remapping for Linux when pressing CTRL or ALT
 
 Since I type with the "Dvorak" keyboard layout, the shortcuts such as ctrl-c, ctrl-x, or ctrl-v are 
 not comfortable anymore for the left hand. And even one of them require two hands to press.
