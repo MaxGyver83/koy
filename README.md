@@ -1,10 +1,13 @@
 # KOY <> Qwertz - Keyboard remapping for Linux when pressing CTRL or ALT
 
+This project let's you use the QWERTZ shortcuts you are used to although you are using the K,O.Y keyboard layout.
+It's a fork of https://github.com/tbocek/dvorak. So Thomas' project description is still valid, I just have changed the filenames in the installation section.
+
 Since I type with the "Dvorak" keyboard layout, the shortcuts such as ctrl-c, ctrl-x, or ctrl-v are 
 not comfortable anymore for the left hand. And even one of them require two hands to press.
 
 Furthermore, applications such as Intellij have their shortcuts, which I'm used to. So 
-for these shortcuts I prefer "Querty". Since there is no way to configure this, it is necessary to intercept the keys and remap the keys from "Dvorak" to "Querty" when pressing CTRL, ALT, WIN or any of those combinations.
+for these shortcuts I prefer "Qwerty". Since there is no way to configure this, it is necessary to intercept the keys and remap the keys from "Dvorak" to "Qwerty" when pressing CTRL, ALT, WIN or any of those combinations.
    
 With X.org I was relying on the wonderful project from Kenton Varda. And then came Wayland. 
 
@@ -23,13 +26,13 @@ The mapping does not work with Eclipse. Regular typing uses Dvorak, while the sh
  * create binary with ```make```
  * install it with ```sudo make install```
 
-This will copy 3 files: dvorak, 80-dvorak.rules, and dvorak@.service
+This will copy 3 files: koy, 80-koy.rules, and koy@.service
 
-The file is triggered on the udev rule and call dvorak systemd service with the device that was attached. The rule contains
+The file is triggered on the udev rule and call koy systemd service with the device that was attached. The rule contains
 the search term "keyb", that will match case insensitive the device name. Only a device with name that contains the substring
 "keyb" will be considered. To prevent an endless loop, the newly created virtual device is excluded from mapping itself.
 
-That way, dvorak will be called whenever an input device is attached.
+That way, koy will be called whenever an input device is attached.
 
 ## Related Links
 I used the following sites for inspiration:
