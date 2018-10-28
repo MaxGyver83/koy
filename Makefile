@@ -1,4 +1,4 @@
-TARGET = dvorak
+TARGET = koy
 LIBS = -lm
 CC = gcc
 CFLAGS = -g -Wall
@@ -25,8 +25,8 @@ clean:
 
 install:
 	cp $(TARGET) /usr/bin/
-	cp 80-dvorak.rules /etc/udev/rules.d/
-	cp dvorak@.service /etc/systemd/system/
+	cp 80-koy.rules /etc/udev/rules.d/
+	cp koy@.service /etc/systemd/system/
 	sudo udevadm control --reload
 	sudo systemctl restart udev.service
 	systemctl daemon-reload
