@@ -102,7 +102,7 @@ static int modifier_bit(int key) {
     case 29: return 1;     // l-ctrl
     case 97: return 2;     // r-ctrl
     case 56: return 4;     // l-alt
-    case 125: return 8;   // win
+    case 125: return 8;    // win
   }
   return 0;
 }
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
 	
 	setuid(0);
 	
-	if(argc < 2) {
+	if (argc < 2) {
 		fprintf(stderr, "error: specify input device, e.g., found in "
 		 "/dev/input/by-id/.\n");
         return EXIT_FAILURE;
@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
     //init states
     mod_state = 0;
     array_counter = 0;
-    for(i=0;i<MAX_LENGTH;i++) {
+    for (i=0;i<MAX_LENGTH;i++) {
     	array[i] = 0;
     }
 
@@ -198,7 +198,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    if(strcasestr(keyboard_name, uidev.name) != NULL) {
+    if (strcasestr(keyboard_name, uidev.name) != NULL) {
         fprintf(stderr, "Cannot get map the virtual device: %s.\n", keyboard_name);
         return EXIT_FAILURE;
     }
@@ -206,7 +206,7 @@ int main(int argc, char* argv[]) {
     // match names, reuse name_ret
     name_ret = -1;
     for (i = 2; i < argc; i++) {
-        if(strcasestr(keyboard_name, argv[i]) != NULL) {
+        if (strcasestr(keyboard_name, argv[i]) != NULL) {
             printf("found input: [%s]\n", keyboard_name);
             name_ret = 0;
             break;
@@ -219,7 +219,7 @@ int main(int argc, char* argv[]) {
 
     
     fdo = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-    if(fdo == -1) {
+    if (fdo == -1) {
 		fprintf(stderr, "Cannot open /dev/uinput: %s.\n", strerror(errno));
         return EXIT_FAILURE;
 	}
@@ -232,7 +232,7 @@ int main(int argc, char* argv[]) {
 	//quick workaround, sleep for 200ms...
 	usleep(200 * 1000);
 	
-	if(ioctl(fdi, EVIOCGRAB, 1) == -1){
+	if (ioctl(fdi, EVIOCGRAB, 1) == -1) {
 		fprintf(stderr, "Cannot grab key: %s.\n", strerror(errno));
         return EXIT_FAILURE;
 	}
@@ -242,11 +242,11 @@ int main(int argc, char* argv[]) {
 		fprintf(stderr, "Cannot set ev bits, key: %s.\n", strerror(errno));
         return EXIT_FAILURE;
 	}
-	if(ioctl(fdo, UI_SET_EVBIT, EV_SYN) == -1) {
+	if (ioctl(fdo, UI_SET_EVBIT, EV_SYN) == -1) {
 		fprintf(stderr, "Cannot set ev bits, syn: %s.\n", strerror(errno));
         return EXIT_FAILURE;
 	}
-	if(ioctl(fdo, UI_SET_EVBIT, EV_MSC) == -1) {
+	if (ioctl(fdo, UI_SET_EVBIT, EV_MSC) == -1) {
 		fprintf(stderr, "Cannot set ev bits, msc: %s.\n", strerror(errno));
         return EXIT_FAILURE;
 	}
@@ -289,20 +289,20 @@ int main(int argc, char* argv[]) {
 		if (ev.type == EV_KEY && ev.value >= 0 && ev.value <= 2) {
 			//printf("%s 0x%04x (%d), arr:%d\n", evval[ev.value], (int)ev.code, (int)ev.code, array_counter);
 			//map the keys
-			mod_current = modifier_bit(ev.code);
-			if(mod_current > 0) {
-				if(ev.value == 1) { //pressed
-					mod_state |= mod_current;
-				} else if(ev.value == 0) {//released
-					mod_state &= ~mod_current;
-				}	
+			mod_current = modifier_bit(ev.code);  // can be 0, 1, 2, 4, 8
+			if (mod_current > 0) { // key is Ctrl (left/right), Alt or Win
+				if (ev.value == 1) { // pressed
+					mod_state |= mod_current;  // add modifier bit
+				} else if (ev.value == 0) { // released
+					mod_state &= ~mod_current; // remove modifier bit
+				}
 			}
 
-			if(ev.code != qwertz2koy(ev.code) && (mod_state > 0 || array_counter > 0)) {
+			if (ev.code != qwertz2koy(ev.code) && (mod_state > 0 || array_counter > 0)) {
 				code = ev.code;
 				//printf("koy %d, %d\n", array_counter, mod_state);
-				if(ev.value==1) { //pressed
-					if(array_counter == MAX_LENGTH) {
+				if (ev.value==1) { //pressed
+					if (array_counter == MAX_LENGTH) {
 						printf("warning, too many keys pressed: %d. %s 0x%04x (%d), arr:%d\n",
 								MAX_LENGTH, evval[ev.value], (int)ev.code, (int)ev.code, array_counter);
 						//skip koy mapping
@@ -311,23 +311,23 @@ int main(int argc, char* argv[]) {
 						array_counter++;
 						code = qwertz2koy(ev.code); // koy mapping
 					}
-				} else if(ev.value==0) { //released
+				} else if (ev.value==0) { //released
 					//now we need to check if the code is in the array
 					//if it is, then the pressed key was in koy mode and
 					//we need to remove it from the array. The ctrl or alt
 					//key does not need to be pressed, when a key is released.
 					//A previous implementation only had a counter, which resulted
 					//occasionally in stuck keys.
-					for(i=0; i<array_counter; i++) {
-						if(array[i] == ev.code + 1) {
+					for (i=0; i<array_counter; i++) {
+						if (array[i] == ev.code + 1) {
 							//found it, map it!
 							array[i] = 0;
 							code = qwertz2koy(ev.code); // koy mapping
 						}
 					}
 					//cleanup array counter
-					for(i=array_counter-1; i>=0; i--) {
-						if(array[i] == 0) {
+					for (i=array_counter-1; i>=0; i--) {
+						if (array[i] == 0) {
 							array_counter--;
 						} else {
 							break;
