@@ -6,7 +6,7 @@ Dieses Projekt ist ein Fork von https://github.com/tbocek/dvorak (Umschaltung au
 
 ---
 
-Wer das KOY-Layout verwendet weiß, dass häufig verwendete Shortcuts wie Strg-c, Strg-v oder Strg-z darin nicht sehr einfach zu erreichen sind. Deshalb habe ich mir gewünscht, ich könnte zwar das KOY-Layout beim normalen Schreiben verwenden, aber bei Shortcuts würden die aufgedruckten Zeichen (QWERTZ) gelten. Thomas Bocek hat dieses Problem für Dvorak gelöst und ich habe seinen Code einfach für KOY angepasst.
+Wer das KOY-Layout verwendet weiß, dass häufig verwendete Shortcuts wie Strg-c, Strg-v oder Strg-z darin nicht sehr einfach zu erreichen sind. Deshalb habe ich mir gewünscht, ich könnte zwar das KOY-Layout beim normalen Schreiben verwenden, aber bei Shortcuts würden die aufgedruckten Zeichen (QWERTZ) gelten. Thomas Bocek hat dieses Problem für Dvorak gelöst und ich habe seinen Code einfach für KOY angepasst. Da KOY (wie Neo2 und "Aus der Neo-Welt") aus sechs Ebenen besteht, gilt bei Shortcuts ab Ebene 3 immer das KOY-Layout (z.B. Strg-AltGr-s = Strg-PfeilLinks).
 
 ## Probleme
 
@@ -15,7 +15,7 @@ In der Beschreibung des Originalprojekts steht, dass Eclipse das eingestellte Ta
 ## Installation
 
  * Kompiliere das Programm mit ```make```
- * Optional: Verschiebe das Programm nach /usr/local/sbin/: ```sudo mv koy /usr/local/sbin/```
+ * *(Optional)* Kopiere das Programm nach /usr/local/sbin/: ```sudo cp koy /usr/local/sbin/```
  
 ### Anwendungsszenario 1:
 
@@ -24,11 +24,11 @@ Wer regelmäßig zwischen QWERTZ- und KOY-Layout wechselt, kann das Programm man
 ```sudo /usr/local/sbin/koy /dev/input/by-path/platform-i8042-serio-0-event-kbd keyb```
 
 Hierbei muss die verwendete Tastatur (/dev/input/...) eingesetzt werden.
-Ich benutze in meinem Skript zum Layout-Wechsel tmux, um das Programm in den Hintergrund zu schicken:
+Ich benutze in meinem Skript zum Layout-Wechsel ```tmux```, um das Programm in den Hintergrund zu schicken:
 
 ```tmux new-session -d 'sudo /usr/local/sbin/koy /dev/input/by-path/platform-i8042-serio-0-event-kbd keyb'```
 
-(/usr/local/sbin/koy muss in die /etc/sudoers eingetragen werden, damit die Passwort-Abfrage entfällt.)
+(```/usr/local/sbin/koy``` muss in die ```/etc/sudoers``` eingetragen werden, damit die Passwort-Abfrage entfällt.)
 
 ### Anwendungsszenario 2:
 
