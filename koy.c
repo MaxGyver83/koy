@@ -19,6 +19,7 @@
   * Changes by Max Schillinger (2018):
   * - replaced function "qwerty2dvorak" by "qwertz2koy"
   * - replaced "dvorak" by "koy" in some comments
+  * - no remapping when Modifier 3 or 4 is pressed
   */
  
  /*
@@ -78,76 +79,90 @@
 #include <stdio.h>
 
 static const char *const evval[3] = {
-    "RELEASED",
-    "PRESSED",
-    "REPEATED"
+	"RELEASED",
+	"PRESSED",
+	"REPEATED"
 };
 
-int emit(int fd, int type, int code, int val)
-{
-   struct input_event ie;
-   ie.type = type;
-   ie.code = code;
-   ie.value = val;
-   /* timestamp values below are ignored */
-   ie.time.tv_sec = 0;
-   ie.time.tv_usec = 0;
+int emit(int fd, int type, int code, int val) {
+	struct input_event ie;
+	ie.type = type;
+	ie.code = code;
+	ie.value = val;
+	/* timestamp values below are ignored */
+	ie.time.tv_sec = 0;
+	ie.time.tv_usec = 0;
 
-   return write(fd, &ie, sizeof(ie));
+	return write(fd, &ie, sizeof(ie));
 }
 
 //from: https://github.com/kentonv/dvorak-qwerty/tree/master/unix
 static int modifier_bit(int key) {
-  switch (key) {
-    case 29: return 1;     // l-ctrl
-    case 97: return 2;     // r-ctrl
-    case 56: return 4;     // l-alt
-    case 125: return 8;    // win
-  }
-  return 0;
+	// fprintf(stdout, "\n\nkey code: %d, ", key);
+	// fflush(stdout);
+	switch (key) {
+		case 29: return 1;   // l-ctrl
+		case 97: return 2;   // r-ctrl
+		case 56: return 4;   // l-alt
+		case 125: return 8;  // win
+	}
+	return 0;
+}
+
+// detect if Modifier 3 (CapsLock/#) and Modifier 4 (Alt Gr/<) was pressed/released
+static int koy_modifier_bit(int key) {
+	switch (key) {
+		case 58: return 1;   // CapsLock
+		case 43: return 2;   // #
+		case 86: return 4;   // <
+		case 100: return 8;  // AltGr
+	}
+	return 0;
 }
 
 // same pattern as function "qwerty2dvorak" from
 // https://github.com/kentonv/dvorak-qwerty/tree/master/unix
+// Keyboard Scan Codes: https://www.millisecond.com/support/docs/v5/html/language/scancodes.htm (incomplete)
+// Also check /usr/share/X11/xkb/keycodes/evdev
 static int qwertz2koy(int key) {
-  switch (key) {
-    case 12: return 25; // ß
-    case 13: return 13; // ´
-    case 16: return 45; // Q
-    case 17: return 51; // W
-    case 18: return 32; // E
-    case 19: return 37; // R
-    case 20: return 36; // T
-    case 21: return 26; // Z
-    case 22: return 34; // U
-    case 23: return 33; // I
-    case 24: return 18; // O
-    case 25: return 50; // P
-    case 26: return 47; // Ü
-    case 27: return 27; // + (no "+" key in KOY layout)
-    case 30: return 31; // A
-    case 31: return 39; // S
-    case 32: return 35; // D
-    case 33: return 40; // F
-    case 34: return 22; // G
-    case 35: return 30; // H
-    case 36: return 53; // J
-    case 37: return 16; // K
-    case 38: return 24; // L
-    case 39: return 48; // Ö
-    case 40: return 46; // Ä
-    case 44: return 20; // Y
-    case 45: return 44; // X
-    case 46: return 23; // C
-    case 47: return 21; // V
-    case 48: return 49; // B
-    case 49: return 38; // N
-    case 50: return 52; // M
-    case 51: return 19; // ,
-    case 52: return 17; // .
-    case 53: return 12; // -
-  }
-  return key;
+	switch (key) {
+		case 12: return 25; // ß
+		case 13: return 13; // ´
+		case 16: return 45; // Q
+		case 17: return 51; // W
+		case 18: return 32; // E
+		case 19: return 37; // R
+		case 20: return 36; // T
+		case 21: return 26; // Z
+		case 22: return 34; // U
+		case 23: return 33; // I
+		case 24: return 18; // O
+		case 25: return 50; // P
+		case 26: return 47; // Ü
+		case 27: return 27; // + (no "+" key in KOY layout)
+		case 30: return 31; // A
+		case 31: return 39; // S
+		case 32: return 35; // D
+		case 33: return 40; // F
+		case 34: return 22; // G
+		case 35: return 30; // H
+		case 36: return 53; // J
+		case 37: return 16; // K
+		case 38: return 24; // L
+		case 39: return 48; // Ö
+		case 40: return 46; // Ä
+		case 44: return 20; // Y
+		case 45: return 44; // X
+		case 46: return 23; // C
+		case 47: return 21; // V
+		case 48: return 49; // B
+		case 49: return 38; // N
+		case 50: return 52; // M
+		case 51: return 19; // ,
+		case 52: return 17; // .
+		case 53: return 12; // -
+	}
+	return key;
 }
 
 int main(int argc, char* argv[]) {
@@ -156,34 +171,35 @@ int main(int argc, char* argv[]) {
 	
 	if (argc < 2) {
 		fprintf(stderr, "error: specify input device, e.g., found in "
-		 "/dev/input/by-id/.\n");
-        return EXIT_FAILURE;
+			"/dev/input/by-id/.\n");
+		return EXIT_FAILURE;
 	}
 	
-    struct input_event ev;
-    ssize_t n;
-    int fdi, fdo, i, mod_state, mod_current, array_counter, code, name_ret;
-    struct uinput_user_dev uidev;
-    const char MAX_LENGTH = 32;
-    int array[MAX_LENGTH];
-    char keyboard_name[256] = "Unknown";
+	struct input_event ev;
+	ssize_t n;
+	int fdi, fdo, i, mod_state, mod_current, koy_mod_state, koy_mod_current, array_counter, code, name_ret;
+	struct uinput_user_dev uidev;
+	const char MAX_LENGTH = 32;
+	int array[MAX_LENGTH];
+	char keyboard_name[256] = "Unknown";
 
-    //the name and ids of the virtual keyboard, we need to define this now, as we need to ignore this to prevent
-    //mapping the virtual keyboard
+	//the name and ids of the virtual keyboard, we need to define this now, as we need to ignore this to prevent
+	//mapping the virtual keyboard
 
-    memset(&uidev, 0, sizeof(uidev));
-    snprintf(uidev.name, UINPUT_MAX_NAME_SIZE, "Virtual KOY Keyboard");
-    uidev.id.bustype = BUS_USB;
-    uidev.id.vendor  = 0x1234;
-    uidev.id.product = 0x5678;
-    uidev.id.version = 0;
+	memset(&uidev, 0, sizeof(uidev));
+	snprintf(uidev.name, UINPUT_MAX_NAME_SIZE, "Virtual KOY Keyboard");
+	uidev.id.bustype = BUS_USB;
+	uidev.id.vendor  = 0x1234;
+	uidev.id.product = 0x5678;
+	uidev.id.version = 0;
 
-    //init states
-    mod_state = 0;
-    array_counter = 0;
-    for (i=0;i<MAX_LENGTH;i++) {
-    	array[i] = 0;
-    }
+	//init states
+	mod_state = 0;
+	koy_mod_state = 0;
+	array_counter = 0;
+	for (i=0;i<MAX_LENGTH;i++) {
+		array[i] = 0;
+	}
 
 	//get first input
 	fdi = open(argv[1], O_RDONLY);
@@ -192,36 +208,36 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 	//
-    name_ret = ioctl(fdi, EVIOCGNAME(sizeof(keyboard_name)-1), keyboard_name);
-    if (name_ret < 0) {
-        fprintf(stderr, "Cannot get device name: %s.\n", strerror(errno));
-        return EXIT_FAILURE;
-    }
+	name_ret = ioctl(fdi, EVIOCGNAME(sizeof(keyboard_name)-1), keyboard_name);
+	if (name_ret < 0) {
+		fprintf(stderr, "Cannot get device name: %s.\n", strerror(errno));
+		return EXIT_FAILURE;
+	}
 
-    if (strcasestr(keyboard_name, uidev.name) != NULL) {
-        fprintf(stderr, "Cannot get map the virtual device: %s.\n", keyboard_name);
-        return EXIT_FAILURE;
-    }
+	if (strcasestr(keyboard_name, uidev.name) != NULL) {
+		fprintf(stderr, "Cannot get map the virtual device: %s.\n", keyboard_name);
+		return EXIT_FAILURE;
+	}
 
-    // match names, reuse name_ret
-    name_ret = -1;
-    for (i = 2; i < argc; i++) {
-        if (strcasestr(keyboard_name, argv[i]) != NULL) {
-            printf("found input: [%s]\n", keyboard_name);
-            name_ret = 0;
-            break;
-        }
-    }
-    if (name_ret < 0) {
-        fprintf(stderr, "Not a matching device: [%s]\n", keyboard_name);
-        return EXIT_FAILURE;
-    }
+	// match names, reuse name_ret
+	name_ret = -1;
+	for (i = 2; i < argc; i++) {
+		if (strcasestr(keyboard_name, argv[i]) != NULL) {
+			printf("found input: [%s]\n", keyboard_name);
+			name_ret = 0;
+			break;
+		}
+	}
+	if (name_ret < 0) {
+		fprintf(stderr, "Not a matching device: [%s]\n", keyboard_name);
+		return EXIT_FAILURE;
+	}
 
-    
-    fdo = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-    if (fdo == -1) {
+	
+	fdo = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+	if (fdo == -1) {
 		fprintf(stderr, "Cannot open /dev/uinput: %s.\n", strerror(errno));
-        return EXIT_FAILURE;
+		return EXIT_FAILURE;
 	}
 	
 	//grab the key, from the input
@@ -234,39 +250,39 @@ int main(int argc, char* argv[]) {
 	
 	if (ioctl(fdi, EVIOCGRAB, 1) == -1) {
 		fprintf(stderr, "Cannot grab key: %s.\n", strerror(errno));
-        return EXIT_FAILURE;
+		return EXIT_FAILURE;
 	}
 	
 	// Keyboard
 	if (ioctl(fdo, UI_SET_EVBIT, EV_KEY) == -1) {
 		fprintf(stderr, "Cannot set ev bits, key: %s.\n", strerror(errno));
-        return EXIT_FAILURE;
+		return EXIT_FAILURE;
 	}
 	if (ioctl(fdo, UI_SET_EVBIT, EV_SYN) == -1) {
 		fprintf(stderr, "Cannot set ev bits, syn: %s.\n", strerror(errno));
-        return EXIT_FAILURE;
+		return EXIT_FAILURE;
 	}
 	if (ioctl(fdo, UI_SET_EVBIT, EV_MSC) == -1) {
 		fprintf(stderr, "Cannot set ev bits, msc: %s.\n", strerror(errno));
-        return EXIT_FAILURE;
+		return EXIT_FAILURE;
 	}
-    
+	
 	// All keys
-    for (i = 0; i < KEY_MAX; i++) {
-        if (ioctl(fdo, UI_SET_KEYBIT, i) == -1) {
-            fprintf(stderr, "Cannot set ev bits: %s.\n", strerror(errno));
+	for (i = 0; i < KEY_MAX; i++) {
+		if (ioctl(fdo, UI_SET_KEYBIT, i) == -1) {
+			fprintf(stderr, "Cannot set ev bits: %s.\n", strerror(errno));
 			return EXIT_FAILURE;
 		}
 	}
 	
 
 
-    if (write(fdo, &uidev, sizeof(uidev)) == -1) {
-        fprintf(stderr, "Cannot set device data: %s.\n", strerror(errno));
+	if (write(fdo, &uidev, sizeof(uidev)) == -1) {
+		fprintf(stderr, "Cannot set device data: %s.\n", strerror(errno));
 		return EXIT_FAILURE;
 	}
 
-    if (ioctl(fdo, UI_DEV_CREATE) == -1) {
+	if (ioctl(fdo, UI_DEV_CREATE) == -1) {
 		fprintf(stderr, "Cannot create device: %s.\n", strerror(errno));
 		return EXIT_FAILURE;
 	}
@@ -274,18 +290,17 @@ int main(int argc, char* argv[]) {
 	//TODO: clear array
 
 	while (1) {
-        n = read(fdi, &ev, sizeof ev);
-        if (n == (ssize_t)-1) {
-            if (errno == EINTR) {
-                continue;
+		n = read(fdi, &ev, sizeof ev);
+		if (n == (ssize_t)-1) {
+			if (errno == EINTR) {
+				continue;
 			} else {
-                break;
+				break;
 			}
-        } else
-        if (n != sizeof ev) {
-            errno = EIO;
-            break;
-        }
+		} else if (n != sizeof ev) {
+			errno = EIO;
+			break;
+		}
 		if (ev.type == EV_KEY && ev.value >= 0 && ev.value <= 2) {
 			//printf("%s 0x%04x (%d), arr:%d\n", evval[ev.value], (int)ev.code, (int)ev.code, array_counter);
 			//map the keys
@@ -297,8 +312,16 @@ int main(int argc, char* argv[]) {
 					mod_state &= ~mod_current; // remove modifier bit
 				}
 			}
+			koy_mod_current = koy_modifier_bit(ev.code);  // can be 0, 1, 2, 4, 8
+			if (koy_mod_current > 0) { // key is Modifier 3 (CapsLock/#) or Modifier 4 (</AltGr)
+				if (ev.value == 1) { // pressed
+					koy_mod_state |= koy_mod_current;  // add koy modifier bit
+				} else if (ev.value == 0) { // released
+					koy_mod_state &= ~koy_mod_current; // remove koy modifier bit
+				}
+			}
 
-			if (ev.code != qwertz2koy(ev.code) && (mod_state > 0 || array_counter > 0)) {
+			if (ev.code != qwertz2koy(ev.code) && (mod_state > 0 || array_counter > 0) && koy_mod_state == 0) {  // does koy_mod_state depend on array_counter?
 				code = ev.code;
 				//printf("koy %d, %d\n", array_counter, mod_state);
 				if (ev.value==1) { //pressed
@@ -343,8 +366,8 @@ int main(int argc, char* argv[]) {
 			//printf("Not key: %d 0x%04x (%d)\n", ev.value, (int)ev.code, (int)ev.code);
 			emit(fdo, ev.type, ev.code, ev.value);
 		}
-    }
-    fflush(stdout);
-    fprintf(stderr, "%s.\n", strerror(errno));
-    return EXIT_FAILURE;
+	}
+	fflush(stdout);
+	fprintf(stderr, "%s.\n", strerror(errno));
+	return EXIT_FAILURE;
 }
