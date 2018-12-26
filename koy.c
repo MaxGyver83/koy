@@ -123,7 +123,6 @@ static int koy_modifier_bit(int key) {
 // same pattern as function "qwerty2dvorak" from
 // https://github.com/kentonv/dvorak-qwerty/tree/master/unix
 // Keyboard Scan Codes: https://www.millisecond.com/support/docs/v5/html/language/scancodes.htm (incomplete)
-// Also check /usr/share/X11/xkb/keycodes/evdev
 static int qwertz2koy(int key) {
 	switch (key) {
 		case 12: return 25; // ß
@@ -201,7 +200,7 @@ int main(int argc, char* argv[]) {
 		array[i] = 0;
 	}
 
-	//get first input
+	// get first input
 	fdi = open(argv[1], O_RDONLY);
 	if (fdi == -1) {
 		fprintf(stderr, "Cannot open any of the devices: %s.\n", strerror(errno));
@@ -275,7 +274,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 	
-
 
 	if (write(fdo, &uidev, sizeof(uidev)) == -1) {
 		fprintf(stderr, "Cannot set device data: %s.\n", strerror(errno));
