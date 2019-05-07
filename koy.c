@@ -123,6 +123,7 @@ static int koy_modifier_bit(int key) {
 // same pattern as function "qwerty2dvorak" from
 // https://github.com/kentonv/dvorak-qwerty/tree/master/unix
 // Keyboard Scan Codes: https://www.millisecond.com/support/docs/v5/html/language/scancodes.htm (incomplete)
+// show key codes: sudo showkey
 static int qwertz2koy(int key) {
 	switch (key) {
 		case 12: return 25; // ß
