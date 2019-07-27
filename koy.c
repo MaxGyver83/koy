@@ -129,7 +129,7 @@ static int qwertz2koy(int key) {
 	switch (key) {
 		case 12: return 43; // ß
 		case 13: return 13; // ´
-		case 16: return 45; // Q
+		case 16: return 44; // Q
 		case 17: return 51; // W
 		case 18: return 32; // E
 		case 19: return 37; // R
@@ -153,7 +153,7 @@ static int qwertz2koy(int key) {
 		case 39: return 48; // Ö
 		case 40: return 46; // Ä
 		case 44: return 20; // Y
-		case 45: return 44; // X
+		case 45: return 45; // X
 		case 46: return 23; // C
 		case 47: return 21; // V
 		case 48: return 49; // B
