@@ -7,13 +7,13 @@ It's a fork of https://github.com/tbocek/dvorak. So Thomas' project description 
 
 ---
 
-Since I type with the "Dvorak" keyboard layout, the shortcuts such as ctrl-c, ctrl-x, or ctrl-v are 
+Since I type with the "Dvorak" keyboard layout, the shortcuts such as ctrl-c, ctrl-x, or ctrl-v are
 not comfortable anymore for the left hand. And even one of them require two hands to press.
 
-Furthermore, applications such as Intellij have their shortcuts, which I'm used to. So 
+Furthermore, applications such as Intellij have their shortcuts, which I'm used to. So
 for these shortcuts I prefer "Qwerty". Since there is no way to configure this, it is necessary to intercept the keys and remap the keys from "Dvorak" to "Qwerty" when pressing CTRL, ALT, WIN or any of those combinations.
-   
-With X.org I was relying on the wonderful project from Kenton Varda. And then came Wayland. 
+
+With X.org I was relying on the wonderful project from Kenton Varda. And then came Wayland.
 
 ## Keyboard remapping with dvorak that works reliably with Wayland - make ctrl-c ctrl-c again
 
@@ -30,7 +30,7 @@ The mapping does not work with Eclipse. Regular typing uses Dvorak, while the sh
  * create binary with ```make```
  * install it with ```sudo make install```
 
-This will copy 3 files: koy, 80-koy.rules, and koy@.service
+This will copy 3 files: kou, 80-kou.rules, and kou@.service
 
 The file is triggered on the udev rule and call koy systemd service with the device that was attached. The rule contains
 the search term "keyb", that will match case insensitive the device name. Only a device with name that contains the substring
