@@ -138,12 +138,12 @@ static int qwertz2kou(int key) {
 		case 22: return 19; // U
 		case 23: return 33; // I
 		case 24: return 18; // O
-		case 25: return 50; // P
+		case 25: return 49; // P
 		case 26: return 47; // Ü
 		case 27: return 27; // + (no "+" key in KOY layout)
 		case 30: return 31; // A
 		case 31: return 39; // S
-		case 32: return 35; // D
+		case 32: return 50; // D
 		case 33: return 25; // F
 		case 34: return 22; // G
 		case 35: return 30; // H
@@ -156,7 +156,7 @@ static int qwertz2kou(int key) {
 		case 45: return 45; // X
 		case 46: return 23; // C
 		case 47: return 21; // V
-		case 48: return 49; // B
+		case 48: return 35; // B
 		case 49: return 38; // N
 		case 50: return 52; // M
 		case 51: return 46; // ,
