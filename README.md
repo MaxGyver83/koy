@@ -2,7 +2,7 @@
 
 *[Deutsche Version](README.de.md)*
 
-This project let's you use the QWERTZ shortcuts you are used to although you are using the K,O.Y keyboard layout.
+This project lets you use the QWERTZ shortcuts you are used to although you are using the K,O.Y keyboard layout.
 It's a fork of https://github.com/tbocek/dvorak. So Thomas' project description is still valid, I just have changed the filenames in the installation section.
 
 ---
