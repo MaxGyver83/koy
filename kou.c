@@ -129,12 +129,12 @@ static int qwertz2kou(int key) {
 	switch (key) {
 		case 12: return 43; // ß
 		case 13: return 13; // ´
-		case 16: return 44; // Q
+		case 16: return 21; // Q
 		case 17: return 51; // W
 		case 18: return 32; // E
 		case 19: return 37; // R
 		case 20: return 36; // T
-		case 21: return 26; // Z
+		case 21: return 44; // Z
 		case 22: return 19; // U
 		case 23: return 33; // I
 		case 24: return 18; // O
@@ -147,7 +147,7 @@ static int qwertz2kou(int key) {
 		case 33: return 25; // F
 		case 34: return 22; // G
 		case 35: return 30; // H
-		case 36: return 53; // J
+		case 36: return 26; // J
 		case 37: return 16; // K
 		case 38: return 24; // L
 		case 39: return 48; // Ö
@@ -155,7 +155,7 @@ static int qwertz2kou(int key) {
 		case 44: return 34; // Y
 		case 45: return 45; // X
 		case 46: return 23; // C
-		case 47: return 21; // V
+		case 47: return 53; // V
 		case 48: return 35; // B
 		case 49: return 38; // N
 		case 50: return 52; // M
