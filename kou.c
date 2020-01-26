@@ -77,12 +77,18 @@
 #include <linux/uinput.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
 static const char *const evval[3] = {
 	"RELEASED",
 	"PRESSED",
 	"REPEATED"
 };
+
+static const int KEY_RELEASED = 0;
+static const int KEY_PRESSED = 1;
+static const int KEY_REPEATED = 2;
 
 int emit(int fd, int type, int code, int val) {
 	struct input_event ie;
@@ -165,6 +171,48 @@ static int qwertz2kou(int key) {
 	return key;
 }
 
+static int mirror(int key) {
+	switch (key) {
+		/* case 12: return 12; // ß */
+		/* case 13: return 13; // ´ */
+		case 16: return 25; // Q
+		case 17: return 24; // W
+		case 18: return 23; // E
+		case 19: return 22; // R
+		case 20: return 21; // T
+		case 21: return 20; // Z
+		case 22: return 19; // U
+		case 23: return 18; // I
+		case 24: return 17; // O
+		case 25: return 16; // P
+		/* case 26: return 26; // Ü (j) no mirror? */
+		/* case 27: return 27; // + (´) no mirror! */
+		case 30: return 39; // A
+		case 31: return 38; // S
+		case 32: return 37; // D
+		case 33: return 36; // F
+		case 34: return 35; // G
+		case 35: return 34; // H
+		case 36: return 33; // J
+		case 37: return 32; // K
+		case 38: return 31; // L
+		case 39: return 30; // Ö
+		/* case 40: return 40; // Ä (Mod3) no mirror! */
+		/* case 43: return 43; // # (ß) no mirror? */
+		case 44: return 52; // Y
+		case 45: return 51; // X
+		case 46: return 50; // C
+		case 47: return 49; // V
+		case 48: return 48; // B
+		case 49: return 47; // N
+		case 50: return 46; // M
+		case 51: return 45; // ,
+		case 52: return 44; // .
+		/* case 53: return 53; // - (v) no mirror? */
+	}
+	return key;
+}
+
 int main(int argc, char* argv[]) {
 
 	setuid(0);
@@ -182,6 +230,9 @@ int main(int argc, char* argv[]) {
 	const char MAX_LENGTH = 32;
 	int array[MAX_LENGTH];
 	char keyboard_name[256] = "Unknown";
+	bool one_hand_mode = false;
+	bool space_pressed = false;
+	bool only_space = true;
 
 	//the name and ids of the virtual keyboard, we need to define this now, as we need to ignore this to prevent
 	//mapping the virtual keyboard
@@ -233,7 +284,6 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	
 	fdo = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 	if (fdo == -1) {
 		fprintf(stderr, "Cannot open /dev/uinput: %s.\n", strerror(errno));
@@ -275,7 +325,6 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-
 	if (write(fdo, &uidev, sizeof(uidev)) == -1) {
 		fprintf(stderr, "Cannot set device data: %s.\n", strerror(errno));
 		return EXIT_FAILURE;
@@ -300,30 +349,79 @@ int main(int argc, char* argv[]) {
 			errno = EIO;
 			break;
 		}
-		if (ev.type == EV_KEY && ev.value >= 0 && ev.value <= 2) {
+		if (ev.type == EV_KEY && ev.value >= 0 && ev.value <= 2) { // a key was released, pressed or repeated
 			printf("\n%ld.%06ld %s 0x%04x (%d), arr:%d\n", ev.time.tv_sec, ev.time.tv_usec, evval[ev.value], (int)ev.code, (int)ev.code, array_counter);
+
 			//map the keys
 			mod_current = modifier_bit(ev.code);  // can be 0, 1, 2, 4, 8
 			if (mod_current > 0) { // key is Ctrl (left/right), Alt or Win
-				if (ev.value == 1) { // pressed
+				if (ev.value == KEY_PRESSED) { // pressed
 					mod_state |= mod_current;  // add modifier bit
-				} else if (ev.value == 0) { // released
+				} else if (ev.value == KEY_RELEASED) { // released
 					mod_state &= ~mod_current; // remove modifier bit
 				}
 			}
+			// mod_current > 0 means that left Ctrl, right Ctrl, left Alt or Windows key is being pressed
+
 			koy_mod_current = koy_modifier_bit(ev.code);  // can be 0, 1, 2, 4, 8
 			if (koy_mod_current > 0) { // key is Modifier 3 (CapsLock/#) or Modifier 4 (</AltGr)
-				if (ev.value == 1) { // pressed
+				if (ev.value == KEY_PRESSED) { // pressed
 					koy_mod_state |= koy_mod_current;  // add koy modifier bit
-				} else if (ev.value == 0) { // released
+				} else if (ev.value == KEY_RELEASED) { // released
 					koy_mod_state &= ~koy_mod_current; // remove koy modifier bit
+				}
+			}
+			// koy_mod_current > 0 means that a Mod3 or a Mod4 key (Neo2, AdNW, KOY, KOU) is being pressed
+
+			// check is space is pressed (only relevant for one hand mode)
+			if (ev.code == 57) {
+				if (ev.value == KEY_PRESSED) { // pressed
+					space_pressed = true;
+					if (one_hand_mode) {
+						only_space = true;
+						// don't emit a space
+						continue;
+					}
+				} else if (ev.value == KEY_RELEASED) { // released
+					space_pressed = false;
+					emit(fdo, ev.type, ev.code, ev.value);
+					if (one_hand_mode && only_space) {
+						// emit a space now
+						emit(fdo, ev.type, ev.code, KEY_PRESSED);
+						emit(fdo, ev.type, ev.code, KEY_RELEASED);
+					}
+					continue;
+				} else if (ev.value == KEY_REPEATED) {
+					if (one_hand_mode) {
+						// don't emit a space
+						continue;
+					}
+				}
+			}
+
+			// toggle one hand mode
+			if (CHECK_BIT(koy_mod_state, 0) || CHECK_BIT(koy_mod_state, 1)) {
+				// Mod3 key is pressed, check for F3 (Mod3+F3 toggles one hand mode)
+				if (ev.code == 61 && ev.value == KEY_RELEASED) { // F3 released
+					one_hand_mode = !one_hand_mode;
+					printf("\nOne hand mode: %d\n", one_hand_mode);
+				}
+				emit(fdo, ev.type, ev.code, ev.value);
+				continue;
+			}
+
+			// one hand mode
+			if (one_hand_mode && space_pressed) {
+				if (ev.code != 57) {
+					only_space = false; // don't emit space when it is released
+					ev.code = mirror(ev.code);
 				}
 			}
 
 			if (ev.code != qwertz2kou(ev.code) && (mod_state > 0 || array_counter > 0) && koy_mod_state == 0) {  // does koy_mod_state depend on array_counter?
 				code = ev.code;
 				//printf("koy %d, %d\n", array_counter, mod_state);
-				if (ev.value==1) { //pressed
+				if (ev.value==KEY_PRESSED) { //pressed
 					if (array_counter == MAX_LENGTH) {
 						printf("warning, too many keys pressed: %d. %s 0x%04x (%d), arr:%d\n",
 								MAX_LENGTH, evval[ev.value], (int)ev.code, (int)ev.code, array_counter);
@@ -333,7 +431,7 @@ int main(int argc, char* argv[]) {
 						array_counter++;
 						code = qwertz2kou(ev.code); // koy mapping
 					}
-				} else if (ev.value==0) { //released
+				} else if (ev.value==KEY_RELEASED) { //released
 					//now we need to check if the code is in the array
 					//if it is, then the pressed key was in koy mode and
 					//we need to remove it from the array. The ctrl or alt
