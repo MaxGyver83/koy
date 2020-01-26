@@ -77,7 +77,6 @@
 #include <linux/uinput.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdbool.h>
 
 static const char *const evval[3] = {
 	"RELEASED",
@@ -178,17 +177,11 @@ int main(int argc, char* argv[]) {
 
 	struct input_event ev;
 	ssize_t n;
-	int fdi, fdi2, fdo, i, mod_state, mod_current, koy_mod_state, koy_mod_current, array_counter, code, name_ret;
+	int fdi, fdo, i, mod_state, mod_current, koy_mod_state, koy_mod_current, array_counter, code, name_ret;
 	struct uinput_user_dev uidev;
 	const char MAX_LENGTH = 32;
 	int array[MAX_LENGTH];
 	char keyboard_name[256] = "Unknown";
-  bool two_keyboards = false;
-
-  if (argc >= 3 && strncmp(argv[2], "/", 1) == 0) {
-		printf("Second keyboard: %s\n", argv[2]);
-    two_keyboards = true;
-	}
 
 	//the name and ids of the virtual keyboard, we need to define this now, as we need to ignore this to prevent
 	//mapping the virtual keyboard
@@ -207,8 +200,6 @@ int main(int argc, char* argv[]) {
 	for (i=0;i<MAX_LENGTH;i++) {
 		array[i] = 0;
 	}
-
-  int index_keywords = two_keyboards ? 3 : 2;
 
 	// get first input
 	fdi = open(argv[1], O_RDONLY);
@@ -230,7 +221,7 @@ int main(int argc, char* argv[]) {
 
 	// match names, reuse name_ret
 	name_ret = -1;
-	for (i = index_keywords; i < argc; i++) {
+	for (i = 2; i < argc; i++) {
 		if (strcasestr(keyboard_name, argv[i]) != NULL) {
 			printf("found input: [%s]\n", keyboard_name);
 			name_ret = 0;
@@ -242,40 +233,7 @@ int main(int argc, char* argv[]) {
 		return EXIT_FAILURE;
 	}
 
-  if (two_keyboards) {
-  	// get second input
-  	fdi2 = open(argv[2], O_RDONLY);
-  	if (fdi2 == -1) {
-  		fprintf(stderr, "Cannot open any of the devices: %s.\n", strerror(errno));
-  		return EXIT_FAILURE;
-  	}
-  	//
-  	name_ret = ioctl(fdi2, EVIOCGNAME(sizeof(keyboard_name)-1), keyboard_name);
-  	if (name_ret < 0) {
-  		fprintf(stderr, "Cannot get device name: %s.\n", strerror(errno));
-  		return EXIT_FAILURE;
-  	}
-
-  	if (strcasestr(keyboard_name, uidev.name) != NULL) {
-  		fprintf(stderr, "Cannot get map the virtual device: %s.\n", keyboard_name);
-  		return EXIT_FAILURE;
-  	}
-
-  	// match names, reuse name_ret
-  	name_ret = -1;
-  	for (i = index_keywords; i < argc; i++) {
-  		if (strcasestr(keyboard_name, argv[i]) != NULL) {
-  			printf("found input: [%s]\n", keyboard_name);
-  			name_ret = 0;
-  			break;
-  		}
-  	}
-  	if (name_ret < 0) {
-	    fprintf(stderr, "Not a matching device: [%s]\n", keyboard_name);
-      return EXIT_FAILURE;
-    }
-  }
-
+	
 	fdo = open("/dev/uinput", O_WRONLY | O_NONBLOCK);
 	if (fdo == -1) {
 		fprintf(stderr, "Cannot open /dev/uinput: %s.\n", strerror(errno));
@@ -330,13 +288,8 @@ int main(int argc, char* argv[]) {
 
 	//TODO: clear array
 
-  int active_input = fdi;
 	while (1) {
-    if (two_keyboards) {
-      // check both keyboards alternately
-      active_input = active_input == fdi ? fdi2 : fdi;
-    }
-		n = read(active_input, &ev, sizeof ev);
+		n = read(fdi, &ev, sizeof ev);
 		if (n == (ssize_t)-1) {
 			if (errno == EINTR) {
 				continue;
