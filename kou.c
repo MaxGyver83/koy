@@ -87,8 +87,22 @@ static const char *const evval[3] = {
 };
 
 static const int KEY_RELEASED = 0;
-static const int KEY_PRESSED = 1;
+static const int KEY_PRESSED  = 1;
 static const int KEY_REPEATED = 2;
+
+// character array for easier readable debugging output
+// E=Esc B=Backspace T=Tab S=Shift P=Print A=Alt C=Ctrl _=Space
+static const char keys[100] =
+" E12345678" // 0-9
+"90s'BTqwer"
+"tzuiopu+RC"
+"asdfghjklo" // 30-39
+"a'S#yxcvbn"
+"m,.-SPA_C1"
+"234567890N" // 60-69
+" HUP-LCR+E"
+"DPID      "
+"         "; // 90-98
 
 int emit(int fd, int type, int code, int val) {
 	struct input_event ie;
@@ -107,9 +121,9 @@ static int modifier_bit(int key) {
 	// fprintf(stdout, "\n\nkey code: %d, ", key);
 	// fflush(stdout);
 	switch (key) {
-		case 29: return 1;   // l-ctrl
-		case 97: return 2;   // r-ctrl
-		case 56: return 4;   // l-alt
+		case  29: return 1;   // l-ctrl
+		case  97: return 2;   // r-ctrl
+		case  56: return 4;   // l-alt
 		case 125: return 8;  // win
 	}
 	return 0;
@@ -118,9 +132,9 @@ static int modifier_bit(int key) {
 // detect if Modifier 3 (CapsLock/#) and Modifier 4 (Alt Gr/<) was pressed/released
 static int koy_modifier_bit(int key) {
 	switch (key) {
-		case 58: return 1;   // CapsLock
-		case 40: return 2;   // ä
-		case 86: return 4;   // <
+		case  58: return 1;   // CapsLock
+		case  40: return 2;   // ä
+		case  86: return 4;   // <
 		case 100: return 8;  // AltGr
 	}
 	return 0;
@@ -175,6 +189,7 @@ static int mirror(int key) {
 	switch (key) {
 		/* case 12: return 12; // ß */
 		/* case 13: return 13; // ´ */
+		case 15: return 26; // Tab → j
 		case 16: return 25; // Q
 		case 17: return 24; // W
 		case 18: return 23; // E
@@ -185,7 +200,7 @@ static int mirror(int key) {
 		case 23: return 18; // I
 		case 24: return 17; // O
 		case 25: return 16; // P
-		/* case 26: return 26; // Ü (j) no mirror? */
+		case 26: return 15; // Ü (j) → Tab
 		/* case 27: return 27; // + (´) no mirror! */
 		case 30: return 39; // A
 		case 31: return 38; // S
@@ -350,7 +365,10 @@ int main(int argc, char* argv[]) {
 			break;
 		}
 		if (ev.type == EV_KEY && ev.value >= 0 && ev.value <= 2) { // a key was released, pressed or repeated
-			printf("\n%ld.%06ld %s 0x%04x (%d), arr:%d\n", ev.time.tv_sec, ev.time.tv_usec, evval[ev.value], (int)ev.code, (int)ev.code, array_counter);
+			printf("\n%ld.%06ld %s 0x%04x (%d), arr:%d", ev.time.tv_sec, ev.time.tv_usec, evval[ev.value], (int)ev.code, (int)ev.code, array_counter);
+			if (ev.code < 100)
+				printf(" [%c]", keys[(int)ev.code]);
+			printf("\n");
 
 			//map the keys
 			mod_current = modifier_bit(ev.code);  // can be 0, 1, 2, 4, 8
@@ -423,8 +441,12 @@ int main(int argc, char* argv[]) {
 				//printf("koy %d, %d\n", array_counter, mod_state);
 				if (ev.value==KEY_PRESSED) { //pressed
 					if (array_counter == MAX_LENGTH) {
-						printf("warning, too many keys pressed: %d. %s 0x%04x (%d), arr:%d\n",
+						printf("warning, too many keys pressed: %d. %s 0x%04x (%d), arr:%d",
 								MAX_LENGTH, evval[ev.value], (int)ev.code, (int)ev.code, array_counter);
+						for (i = 0; i < array_counter; i++)
+							printf(" %d", array[i]);
+
+						printf("\n");
 						//skip koy mapping
 					} else {
 						array[array_counter] = ev.code + 1; //0 means not mapped
@@ -456,11 +478,20 @@ int main(int argc, char* argv[]) {
 				}
 				emit(fdo, ev.type, code, ev.value);
 			} else {
-				//printf("non koy %d\n", array_counter);
+				printf("No remapping: code=%d array_counter=%d\n", (int)ev.code, array_counter);
 				emit(fdo, ev.type, ev.code, ev.value);
 			}
 		} else {
-			//printf("Not key: %d 0x%04x (%d)\n", ev.value, (int)ev.code, (int)ev.code);
+			// printf("Not a key: type=%d value=%d code=0x%04x (%d)\n", ev.type, ev.value, (int)ev.code, (int)ev.code);
+			// type 0=EV_SYN 1=EV_KEY 4=EV_MSC
+			// * EV_SYN:
+			//   - Used as markers to separate events. Events may be separated in time or in
+			//     space, such as with the multitouch protocol.
+			// * EV_KEY:
+			//   - Used to describe state changes of keyboards, buttons, or other key-like
+			//     devices.
+			// * EV_MSC:
+			//   - Used to describe miscellaneous input data that do not fit into other types.
 			emit(fdo, ev.type, ev.code, ev.value);
 		}
 	}
