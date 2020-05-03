@@ -17,7 +17,7 @@
 
  /*
   * Changes by Max Schillinger (2018):
-  * - replaced function "qwerty2dvorak" by "qwertz2kou"
+  * - replaced function "qwerty2dvorak" by "qwertz2vou"
   * - replaced "dvorak" by "koy" in some comments
   * - no remapping when Modifier 3 or 4 is pressed
   */
@@ -124,7 +124,7 @@ static int koy_modifier_bit(int key) {
 // https://github.com/kentonv/dvorak-qwerty/tree/master/unix
 // Keyboard Scan Codes: https://www.millisecond.com/support/docs/v5/html/language/scancodes.htm (incomplete)
 // show key codes: sudo showkey
-static int qwertz2kou(int key) {
+static int qwertz2vou(int key) {
 	switch (key) {
 		case 12: return 43; // ß
 		case 13: return 13; // ´
@@ -145,16 +145,16 @@ static int qwertz2kou(int key) {
 		case 32: return 50; // D
 		case 33: return 25; // F
 		case 34: return 22; // G
-		case 35: return 30; // H
+		case 35: return 24; // H
 		case 36: return 26; // J
-		case 37: return 16; // K
-		case 38: return 24; // L
+		case 37: return 53; // K
+		case 38: return 23; // L
 		case 39: return 48; // Ö
 		case 40: return 20; // Ä
 		case 44: return 34; // Y
 		case 45: return 45; // X
-		case 46: return 23; // C
-		case 47: return 53; // V
+		case 46: return 30; // C
+		case 47: return 16; // V
 		case 48: return 35; // B
 		case 49: return 38; // N
 		case 50: return 52; // M
@@ -320,7 +320,7 @@ int main(int argc, char* argv[]) {
 				}
 			}
 
-			if (ev.code != qwertz2kou(ev.code) && (mod_state > 0 || array_counter > 0) && koy_mod_state == 0) {  // does koy_mod_state depend on array_counter?
+			if (ev.code != qwertz2vou(ev.code) && (mod_state > 0 || array_counter > 0) && koy_mod_state == 0) {  // does koy_mod_state depend on array_counter?
 				code = ev.code;
 				//printf("koy %d, %d\n", array_counter, mod_state);
 				if (ev.value==1) { //pressed
@@ -331,7 +331,7 @@ int main(int argc, char* argv[]) {
 					} else {
 						array[array_counter] = ev.code + 1; //0 means not mapped
 						array_counter++;
-						code = qwertz2kou(ev.code); // koy mapping
+						code = qwertz2vou(ev.code); // koy mapping
 					}
 				} else if (ev.value==0) { //released
 					//now we need to check if the code is in the array
@@ -344,7 +344,7 @@ int main(int argc, char* argv[]) {
 						if (array[i] == ev.code + 1) {
 							//found it, map it!
 							array[i] = 0;
-							code = qwertz2kou(ev.code); // koy mapping
+							code = qwertz2vou(ev.code); // koy mapping
 						}
 					}
 					//cleanup array counter

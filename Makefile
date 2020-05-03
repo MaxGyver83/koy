@@ -1,4 +1,4 @@
-TARGET = kou
+TARGET = vou
 LIBS = -lm
 CC = gcc
 CFLAGS = -g -Wall
@@ -25,8 +25,8 @@ clean:
 
 install:
 	cp $(TARGET) /usr/bin/
-	cp 80-kou.rules /etc/udev/rules.d/
-	cp kou@.service /etc/systemd/system/
+	cp 80-vou.rules /etc/udev/rules.d/
+	cp vou@.service /etc/systemd/system/
 	sudo udevadm control --reload
 	sudo systemctl restart udev.service
 	systemctl daemon-reload
